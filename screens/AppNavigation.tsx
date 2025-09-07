@@ -1,19 +1,21 @@
-// navigation/AppNavigation.tsx
+// AppNavigation.tsx
 import React from "react";
 import { TouchableOpacity } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createDrawerNavigator } from "@react-navigation/drawer";
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from "react-native-vector-icons/Ionicons";
 
 import PlaylistsScreen from "./PlaylistsScreen";
 import ProfileScreen from "./ProfileScreen";
 import SettingsScreen from "./SettingsScreen";
+import LoginScreen from "./LoginScreen";
+import SignUpScreen from "./SignUpScreen";
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
 
-// Stack for Playlists with header buttons
+/** Inner stack for playlists with header buttons */
 function PlaylistsStack() {
   return (
     <Stack.Navigator
@@ -22,16 +24,10 @@ function PlaylistsStack() {
         headerTintColor: "#fff",
         headerRight: () => (
           <>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("Profile")}
-              style={{ marginRight: 15 }}
-            >
+            <TouchableOpacity onPress={() => navigation.navigate("Profile" as never)} style={{ marginRight: 15 }}>
               <Icon name="person-circle-outline" size={28} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("Settings")}
-              style={{ marginRight: 15 }}
-            >
+            <TouchableOpacity onPress={() => navigation.navigate("Settings" as never)} style={{ marginRight: 15 }}>
               <Icon name="settings-outline" size={28} color="#fff" />
             </TouchableOpacity>
           </>
@@ -45,19 +41,26 @@ function PlaylistsStack() {
   );
 }
 
-// Drawer containing the Playlists stack
+/** Your main app after login */
+function MainDrawer() {
+  return (
+    <Drawer.Navigator screenOptions={{ headerShown: false }}>
+      <Drawer.Screen name="PlaylistsStack" component={PlaylistsStack} options={{ title: "Home" }} />
+      <Drawer.Screen name="Profile" component={ProfileScreen} />
+      <Drawer.Screen name="Settings" component={SettingsScreen} />
+    </Drawer.Navigator>
+  );
+}
+
+/** Root navigator that starts at Login */
 export default function AppNavigation() {
   return (
     <NavigationContainer>
-      <Drawer.Navigator
-        screenOptions={{
-          headerShown: false, // Hide default header for Drawer screens
-        }}
-      >
-        <Drawer.Screen name="PlaylistsStack" component={PlaylistsStack} options={{ title: "Home" }} />
-        <Drawer.Screen name="Profile" component={ProfileScreen} />
-        <Drawer.Screen name="Settings" component={SettingsScreen} />
-      </Drawer.Navigator>
+      <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} />
+        <Stack.Screen name="Main" component={MainDrawer} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }

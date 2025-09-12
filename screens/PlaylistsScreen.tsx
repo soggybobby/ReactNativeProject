@@ -55,11 +55,6 @@ export default function PlaylistsScreen() {
       {/* Top bar */}
       <View style={styles.topBar}>
         <Text style={styles.greeting}>{greeting}</Text>
-        <View style={styles.topIcons}>
-          <TouchableOpacity style={styles.iconBtn}><Icon name="notifications-outline" size={22} color="#fff" /></TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn}><Icon name="time-outline" size={22} color="#fff" /></TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn}><Icon name="settings-outline" size={22} color="#fff" /></TouchableOpacity>
-        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>

@@ -70,7 +70,6 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.header}>Profile</Text>
       </View>
 
       <View style={styles.card}>

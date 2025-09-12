@@ -65,7 +65,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Settings</Text>
+      <Text style={styles.header}></Text>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Playback</Text>

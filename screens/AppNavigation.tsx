@@ -1,17 +1,25 @@
 // AppNavigation.tsx
 import React from "react";
 import { TouchableOpacity, View, Text } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   NavigationContainer,
   DrawerActions,
+  createNavigationContainerRef,
 } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
+import {
+  createStackNavigator,
+  CardStyleInterpolators,
+} from "@react-navigation/stack";
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
   DrawerItem,
+  useDrawerProgress,
+  useDrawerStatus,
 } from "@react-navigation/drawer";
 import LinearGradient from "react-native-linear-gradient";
+import Animated, { Easing, interpolate, useAnimatedStyle } from "react-native-reanimated";
 import Icon from "react-native-vector-icons/Ionicons";
 
 import PlaylistsScreen from "./PlaylistsScreen";
@@ -20,9 +28,54 @@ import SettingsScreen from "./SettingsScreen";
 import LoginScreen from "./LoginScreen";
 import SignUpScreen from "./SignUpScreen";
 
+/* ---------------- Keys for persistence ---------------- */
+const LAST_SCREEN_KEY = "nav:lastScreen";     // "PlaylistsStack" | "Profile" | "Settings"
+const DRAWER_OPEN_KEY = "nav:drawerOpen";     // "true" | "false"
+
+/* ---------------- Nav setup ---------------- */
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
+const navigationRef = createNavigationContainerRef();
 
+/* ---------- Transitions ---------- */
+// 200ms fade for SignUp
+const FADE_200 = {
+  transitionSpec: {
+    open:  { animation: "timing" as const, config: { duration: 200, easing: Easing.linear } },
+    close: { animation: "timing" as const, config: { duration: 200, easing: Easing.linear } },
+  },
+  cardStyleInterpolator: ({ current }: any) => ({
+    cardStyle: { opacity: current.progress },
+  }),
+};
+
+/* ---------- Reanimated drawer scale wrapper ---------- */
+function DrawerAnimatedContainer({ children }: { children: React.ReactNode }) {
+  const progress = useDrawerProgress(); // 0 -> 1
+  const animatedStyle = useAnimatedStyle(() => {
+    const scale = interpolate(progress.value, [0, 1], [1, 0.9]);
+    const radius = interpolate(progress.value, [0, 1], [0, 16]);
+    const translateX = interpolate(progress.value, [0, 1], [0, 12]);
+    return {
+      transform: [{ scale }, { translateX }],
+      borderRadius: radius,
+      overflow: "hidden",
+      backgroundColor: "#0b0b0f",
+    };
+  });
+  return <Animated.View style={[{ flex: 1 }, animatedStyle]}>{children}</Animated.View>;
+}
+
+/* ---------- Saves drawer open/close to storage ---------- */
+function DrawerStatusSaver() {
+  const status = useDrawerStatus(); // "open" | "closed"
+  React.useEffect(() => {
+    AsyncStorage.setItem(DRAWER_OPEN_KEY, String(status === "open"));
+  }, [status]);
+  return null;
+}
+
+/* ---------- Custom Drawer (gradient active item) ---------- */
 function CustomDrawerContent(props: any) {
   const { state, descriptors, navigation } = props;
 
@@ -31,6 +84,7 @@ function CustomDrawerContent(props: any) {
       {...props}
       contentContainerStyle={{ paddingTop: 0, backgroundColor: "#141422" }}
     >
+      {/* Drawer Header / User Card */}
       <TouchableOpacity
         activeOpacity={0.8}
         style={{
@@ -64,7 +118,6 @@ function CustomDrawerContent(props: any) {
           } as const;
 
           if (focused) {
-            // Active item → Gradient background
             return (
               <LinearGradient
                 key={route.key}
@@ -86,7 +139,6 @@ function CustomDrawerContent(props: any) {
             );
           }
 
-          // Inactive item → normal look with subtle press color
           return (
             <DrawerItem
               key={route.key}
@@ -105,7 +157,7 @@ function CustomDrawerContent(props: any) {
   );
 }
 
-/** ---------- Inner stack for Playlists ---------- */
+/* ---------- Inner stack for Playlists (no top-right buttons) ---------- */
 function PlaylistsStack() {
   return (
     <Stack.Navigator
@@ -130,10 +182,37 @@ function PlaylistsStack() {
   );
 }
 
-/** ---------- Drawer (Home + Profile + Settings) ---------- */
-function MainDrawer() {
+/* ---------- Drawer screens wrapped with scale + status saver ---------- */
+function HomeWithScale() {
+  return (
+    <DrawerAnimatedContainer>
+      <DrawerStatusSaver />
+      <PlaylistsStack />
+    </DrawerAnimatedContainer>
+  );
+}
+function ProfileWithScale() {
+  return (
+    <DrawerAnimatedContainer>
+      <DrawerStatusSaver />
+      <ProfileScreen />
+    </DrawerAnimatedContainer>
+  );
+}
+function SettingsWithScale() {
+  return (
+    <DrawerAnimatedContainer>
+      <DrawerStatusSaver />
+      <SettingsScreen />
+    </DrawerAnimatedContainer>
+  );
+}
+
+/* ---------- Drawer (Home + Profile + Settings) ---------- */
+function MainDrawer({ initialRouteName }: { initialRouteName: string }) {
   return (
     <Drawer.Navigator
+      initialRouteName={initialRouteName} // 👈 restore last drawer screen
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
@@ -147,20 +226,17 @@ function MainDrawer() {
         drawerType: "slide",
         drawerStyle: { backgroundColor: "#141421", width: 280 },
 
-        // icon/text colors (inactive state text)
+        // icon/text colors
         drawerActiveTintColor: "#1DB954",
         drawerInactiveTintColor: "#b3b3b3",
 
         // item container rounding
-        drawerItemStyle: {
-          borderRadius: 12,
-          overflow: "hidden",
-        },
+        drawerItemStyle: { borderRadius: 12, overflow: "hidden" },
       }}
     >
       <Drawer.Screen
         name="PlaylistsStack"
-        component={PlaylistsStack}
+        component={HomeWithScale}
         options={{
           title: "Home",
           drawerIcon: ({ color, size }) => (
@@ -169,10 +245,9 @@ function MainDrawer() {
         }}
       />
 
-      {/* Profile shows its own header with hamburger */}
       <Drawer.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={ProfileWithScale}
         options={({ navigation }) => ({
           headerShown: true,
           headerStyle: { backgroundColor: "#121212" },
@@ -192,10 +267,9 @@ function MainDrawer() {
         })}
       />
 
-      {/* Settings shows its own header with hamburger */}
       <Drawer.Screen
         name="Settings"
-        component={SettingsScreen}
+        component={SettingsWithScale}
         options={({ navigation }) => ({
           headerShown: true,
           headerStyle: { backgroundColor: "#121212" },
@@ -218,14 +292,75 @@ function MainDrawer() {
   );
 }
 
-/** ---------- Root (Auth -> Main) ---------- */
+/* ---------- Helpers: find current drawer screen name ---------- */
+function getCurrentDrawerRoute(state: any): string | null {
+  if (!state) return null;
+  // root -> Stack
+  const rootRoute = state.routes?.[state.index];
+  if (!rootRoute) return null;
+  if (rootRoute.name !== "Main") return null; // we're not in the drawer yet
+
+  const drawerState = rootRoute.state;
+  if (!drawerState) return null;
+  const drawerRoute = drawerState.routes?.[drawerState.index];
+  return drawerRoute?.name ?? null;
+}
+
+/* ---------- Root (Auth -> Main) with persistence ---------- */
 export default function AppNavigation() {
+  const [initialDrawerRoute, setInitialDrawerRoute] = React.useState<string>("PlaylistsStack");
+  const [startOnMain, setStartOnMain] = React.useState<boolean>(false); // go straight to Main if we have a saved drawer screen
+  const shouldOpenDrawerRef = React.useRef<boolean>(false);
+
+  // Load persisted state (last drawer screen + drawer open)
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const savedScreen = await AsyncStorage.getItem(LAST_SCREEN_KEY);
+        if (savedScreen === "Profile" || savedScreen === "Settings" || savedScreen === "PlaylistsStack") {
+          setInitialDrawerRoute(savedScreen);
+          setStartOnMain(true);
+        }
+        const savedDrawerOpen = await AsyncStorage.getItem(DRAWER_OPEN_KEY);
+        shouldOpenDrawerRef.current = savedDrawerOpen === "true";
+      } catch {
+        // fall back to defaults
+        setInitialDrawerRoute("PlaylistsStack");
+        setStartOnMain(false);
+      }
+    })();
+  }, []);
+
+  // Persist last drawer screen on any nav state change
+  const onStateChange = React.useCallback(async () => {
+    try {
+      const state = navigationRef.getRootState();
+      const drawerRoute = getCurrentDrawerRoute(state);
+      if (drawerRoute) {
+        await AsyncStorage.setItem(LAST_SCREEN_KEY, drawerRoute);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Open the drawer if it was open last time (after nav is ready)
+  const handleReady = React.useCallback(() => {
+    if (shouldOpenDrawerRef.current) {
+      // We are already inside Main (if startOnMain). Dispatch open.
+      navigationRef.dispatch(DrawerActions.openDrawer());
+    }
+  }, []);
+
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+    <NavigationContainer ref={navigationRef} onStateChange={onStateChange} onReady={handleReady}>
+      <Stack.Navigator initialRouteName={startOnMain ? "Main" : "Login"} screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} />
-        <Stack.Screen name="Main" component={MainDrawer} />
+        {/* 200ms fade for SignUp */}
+        <Stack.Screen name="SignUp" component={SignUpScreen} options={FADE_200} />
+        <Stack.Screen name="Main">
+          {() => <MainDrawer initialRouteName={initialDrawerRoute} />}
+        </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
   );

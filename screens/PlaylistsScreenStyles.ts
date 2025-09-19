@@ -132,6 +132,84 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   miniIcon: { paddingHorizontal: 6 },
+
+  /* Playlist Builder Styles */
+  // Input Row (for adding new song)
+  inputRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  input: {
+    flex: 1,
+    backgroundColor: "#141421",
+    color: "#fff",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginRight: 8,
+  },
+  addBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: GREEN,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  addText: { color: "#000", fontWeight: "800" },
+
+  // Undo/Redo/Clear Buttons Row
+  actionsRow: { flexDirection: "row", gap: 10, marginBottom: 12 },
+  pillBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#27e178", // Green for Undo/Redo
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+  },
+  dangerBtn: { backgroundColor: "#f1b82d" }, // Orange for Clear
+  btnDisabled: { opacity: 0.5 },
+
+  pillText: { color: "#000", fontWeight: "600" },
+
+  // Playlist (when no song is added yet)
+  playlistSectionTitle: { color: "#b3b3b3", fontSize: 12, marginTop: 8, marginBottom: 6 }, // Renamed this
+  emptyText: { color: "#6f6f73", fontSize: 13, marginBottom: 8 },
+
+  // Song Row (each individual song in playlist)
+  playlistSongRow: {  // Renamed this to avoid conflict
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#141421",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  playlistSongTitle: {  // Renamed this to avoid conflict
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+    flex: 1,
+  },
+  songIconBtn: {  // Renamed to avoid conflict
+    backgroundColor: GREEN,
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginLeft: 8,
+  },
+
+  // History (for the undo/redo actions)
+  historyBox: {
+    backgroundColor: "#141421",
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 20,
+  },
+  historyRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
+  historyDot: { color: GREEN, marginRight: 8, fontSize: 14 },
+  historyText: { color: "#ddd", flex: 1 },
 });
 
 export default styles;

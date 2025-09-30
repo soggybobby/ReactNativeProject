@@ -1,3 +1,4 @@
+// PlaylistsScreen.tsx
 import React, { useState, useMemo, useReducer, useEffect } from "react";
 import {
   SafeAreaView,
@@ -7,19 +8,29 @@ import {
   Image,
   TouchableOpacity,
   TextInput,
-  FlatList,
   Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import styles from "./PlaylistsScreenStyles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "./store";
+import { toggleTheme } from "./store/themeSlice";
 
 // --- Playlist Builder Types and Reducer ---
 type Song = { id: string; title: string; artist: string; cover: string };
-type PlaylistState = { past: Song[][]; present: Song[]; future: Song[][]; history: string[] };
-type PlaylistAction = { type: "ADD" | "REMOVE" | "CLEAR" | "UNDO" | "REDO"; title?: string; id?: string };
+type PlaylistState = {
+  past: Song[][];
+  present: Song[];
+  future: Song[][];
+  history: string[];
+};
+type PlaylistAction = {
+  type: "ADD" | "REMOVE" | "CLEAR" | "UNDO" | "REDO";
+  title?: string;
+  id?: string;
+};
 
-// Reducer function for managing the playlist state
 const playlistReducer = (state: PlaylistState, action: PlaylistAction): PlaylistState => {
   switch (action.type) {
     case "ADD":
@@ -33,7 +44,7 @@ const playlistReducer = (state: PlaylistState, action: PlaylistAction): Playlist
       return {
         ...state,
         past: [...state.past, state.present],
-        present: [newSong, ...state.present], // Ensure present is an array of Song[]
+        present: [newSong, ...state.present],
         future: [],
         history: [...state.history, `Added ${newSong.title}`],
       };
@@ -44,7 +55,7 @@ const playlistReducer = (state: PlaylistState, action: PlaylistAction): Playlist
       return {
         ...state,
         past: [...state.past, state.present],
-        present: removedSongs, // Ensure present remains an array of Song[]
+        present: removedSongs,
         future: [],
         history: [...state.history, `Removed song`],
       };
@@ -53,30 +64,30 @@ const playlistReducer = (state: PlaylistState, action: PlaylistAction): Playlist
       return {
         ...state,
         past: [...state.past, state.present],
-        present: [], // Set present to an empty array of songs
+        present: [],
         future: [],
         history: [...state.history, "Cleared playlist"],
       };
 
     case "UNDO":
-      if (state.past.length === 0) return state; // Nothing to undo
-      const prevState = state.past[state.past.length - 1]; // Get previous state
+      if (state.past.length === 0) return state;
+      const prevState = state.past[state.past.length - 1];
       return {
         ...state,
-        past: state.past.slice(0, -1), // Remove last past state (we've applied it)
-        present: prevState, // Set present to the previous state
-        future: [state.present, ...state.future], // Push current state to future
+        past: state.past.slice(0, -1),
+        present: prevState,
+        future: [state.present, ...state.future],
         history: [...state.history, "Undo action"],
       };
 
     case "REDO":
-      if (state.future.length === 0) return state; // Nothing to redo
-      const nextState = state.future[0]; // Get next state from future
+      if (state.future.length === 0) return state;
+      const nextState = state.future[0];
       return {
         ...state,
-        past: [...state.past, state.present], // Push current state to past
-        present: nextState, // Set present to the next state
-        future: state.future.slice(1), // Remove first future state (we've applied it)
+        past: [...state.past, state.present],
+        present: nextState,
+        future: state.future.slice(1),
         history: [...state.history, "Redo action"],
       };
 
@@ -85,7 +96,7 @@ const playlistReducer = (state: PlaylistState, action: PlaylistAction): Playlist
   }
 };
 
-// Initial state for the playlist reducer
+// Initial state
 const initialState: PlaylistState = {
   past: [],
   present: [],
@@ -93,10 +104,9 @@ const initialState: PlaylistState = {
   history: [],
 };
 
-// --- Playlist Type ---
+// --- Playlists Data ---
 type Playlist = { id: string; title: string; image: string };
 
-// --- Playlists Data --- (Recent and Recommended Playlists)
 const recent: Playlist[] = [
   { id: "1", title: "Top Hits 2025", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?crop=entropy&cs=tinysrgb&fit=max&w=300&h=300" },
   { id: "2", title: "Chill Vibes", image: "https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?crop=entropy&cs=tinysrgb&fit=max&w=300&h=300" },
@@ -121,12 +131,14 @@ const recommendations: Song[] = [
   { id: "4", title: "Brightest Heart", artist: "Oguri Cap", cover: "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/eb/76/6b/eb766b24-bb40-1daa-e050-f53993c2455f/25UMGIM43629.rgb.jpg/800x800cc.jpg" },
 ];
 
-// --- Main Screen Component ---
+// --- Main Screen ---
 export default function PlaylistsScreen() {
-  const [input, setInput] = useState<string>(""); // Track user input for song name
+  const [input, setInput] = useState<string>("");
   const [playlistState, dispatch] = useReducer(playlistReducer, initialState);
 
-  // Greeting message
+  const reduxDispatch = useDispatch();
+  const theme = useSelector((state: RootState) => state.theme.mode);
+
   const greeting = useMemo(() => {
     const h = new Date().getHours();
     if (h < 12) return "Good morning";
@@ -141,27 +153,15 @@ export default function PlaylistsScreen() {
       Alert.alert("Missing title", "Please enter a song name.");
       return;
     }
-    const newSong: Song = { 
-      id: Math.random().toString(36).slice(2), 
-      title, 
-      artist: "Unknown", 
-      cover: "default_cover.jpg" 
-    };
     dispatch({ type: "ADD", title });
-    setInput(""); // Clear input field
+    setInput("");
   };
 
-  // Remove song from playlist
   const removeSong = (id: string) => dispatch({ type: "REMOVE", id });
-
-  // Undo and Redo actions
   const undo = () => dispatch({ type: "UNDO" });
   const redo = () => dispatch({ type: "REDO" });
 
-  const canUndo = playlistState.past.length > 0;
-  const canRedo = playlistState.future.length > 0;
-
-  // Store the playlist and history in AsyncStorage on state update
+  // Save state
   useEffect(() => {
     const storeState = async () => {
       try {
@@ -173,138 +173,88 @@ export default function PlaylistsScreen() {
     storeState();
   }, [playlistState]);
 
-  // Restore the state on app launch or reload
-  useEffect(() => {
-    const loadState = async () => {
-      try {
-        const savedState = await AsyncStorage.getItem("playlistState");
-        if (savedState) {
-          dispatch({ type: "CLEAR" }); // First clear any existing state
-          const parsedState = JSON.parse(savedState);
-          parsedState.past.forEach((state: Song[]) => {
-            dispatch({ type: "ADD", title: state[0].title }); // Adding previously stored songs back
-          });
-        }
-      } catch (e) {
-        console.error("Failed to load state", e);
-      }
-    };
-    loadState();
-  }, []);
+  
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: theme === "light" ? "#fff" : "#222" },
+      ]}
+    >
+      {/* Top Bar */}
       <View style={styles.topBar}>
-        <Text style={styles.greeting}>{greeting}</Text>
+        <Text
+          style={[styles.greeting, { color: theme === "light" ? "#000" : "#fff" }]}
+        >
+          {greeting}
+        </Text>
+
+        {/* 🌙 Theme Toggle Button */}
+        <TouchableOpacity
+          style={styles.pillBtn}
+          onPress={() => reduxDispatch(toggleTheme())}
+        >
+          <Icon
+            name={theme === "light" ? "moon-outline" : "sunny-outline"}
+            size={20}
+            color={theme === "light" ? "#000" : "#fff"}
+          />
+          <Text
+            style={[
+              styles.pillText,
+              { color: theme === "light" ? "#000" : "#fff" },
+            ]}
+          >
+            {theme === "light" ? "Dark Mode" : "Light Mode"}
+          </Text>
+        </TouchableOpacity>
       </View>
 
+      {/* Scrollable content */}
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Playlist Builder Section */}
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Add a song (e.g., Blinding Lights)"
-            placeholderTextColor="#8b8b8b"
-            value={input}
-            onChangeText={setInput}
-            onSubmitEditing={addSong}
-            returnKeyType="done"
-          />
-          <TouchableOpacity style={styles.addBtn} onPress={addSong}>
-            <Icon name="add" size={20} color="#000" />
-            <Text style={styles.addText}>Add</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Undo / Redo / Clear Buttons */}
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={[styles.pillBtn, !canUndo && styles.btnDisabled]}
-            disabled={!canUndo}
-            onPress={undo}
-          >
-            <Icon name="arrow-undo-outline" size={18} color="#000" />
-            <Text style={styles.pillText}>Undo</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.pillBtn, !canRedo && styles.btnDisabled]}
-            disabled={!canRedo}
-            onPress={redo}
-          >
-            <Icon name="arrow-redo-outline" size={18} color="#000" />
-            <Text style={styles.pillText}>Redo</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.pillBtn, styles.dangerBtn]} onPress={() => dispatch({ type: "CLEAR" })}>
-            <Icon name="trash" size={18} color="#000" />
-            <Text style={styles.pillText}>Clear</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Song List */}
-        <Text style={styles.playlistSectionTitle}>Current Playlist</Text>
-        <FlatList
-          data={playlistState.present}
-          keyExtractor={(s) => s.id}
-          renderItem={({ item }) => (
-            <View style={styles.playlistSongRow}>
-              <Text style={styles.playlistSongTitle} numberOfLines={1}>{item.title}</Text>
-              <TouchableOpacity
-                onPress={() => removeSong(item.id)}
-                style={styles.songIconBtn}
-                accessibilityLabel={`Remove ${item.title}`}
-              >
-                <Icon name="trash-outline" size={18} color="#000" />
-              </TouchableOpacity>
-            </View>
-          )}
-          ListEmptyComponent={<Text style={styles.emptyText}>No songs yet. Add your first track!</Text>}
-        />
-
-        {/* Recently played */}
-        <Text style={styles.sectionTitle}>Recently played</Text>
-        <View style={styles.grid}>
-          {recent.map((pl) => (
-            <TouchableOpacity key={pl.id} style={styles.gridCard} activeOpacity={0.8}>
-              <Image source={{ uri: pl.image }} style={styles.gridImage} />
-              <Text style={styles.gridTitle} numberOfLines={1}>
-                {pl.title}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Made for you carousel */}
-        <Text style={styles.sectionTitle}>Made for you</Text>
+        {/* Recent Playlists */}
+        <Text style={[styles.sectionTitle, { color: theme === "light" ? "#000" : "#fff" }]}>
+          Recently Played
+        </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {madeForYou.map((pl) => (
-            <TouchableOpacity key={pl.id} style={styles.card} activeOpacity={0.85}>
-              <Image source={{ uri: pl.image }} style={styles.cardImage} />
-              <Text style={styles.cardTitle} numberOfLines={1}>
-                {pl.title}
+          {recent.map((item) => (
+            <View key={item.id} style={styles.playlistCard}>
+              <Image source={{ uri: item.image }} style={styles.playlistImage} />
+              <Text style={[styles.playlistTitle, { color: theme === "light" ? "#000" : "#fff" }]}>
+                {item.title}
               </Text>
-            </TouchableOpacity>
+            </View>
           ))}
         </ScrollView>
 
-        {/* Recommended songs list */}
-        <Text style={styles.sectionTitle}>Recommended for you</Text>
-        {recommendations.map((song) => (
-          <TouchableOpacity key={song.id} style={styles.songRow} activeOpacity={0.7}>
-            <Image source={{ uri: song.cover }} style={styles.songImage} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.songTitle} numberOfLines={1}>
-                {song.title}
-              </Text>
-              <Text style={styles.songArtist} numberOfLines={1}>
-                {song.artist}
+        {/* Made For You */}
+        <Text style={[styles.sectionTitle, { color: theme === "light" ? "#000" : "#fff" }]}>
+          Made For You
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {madeForYou.map((item) => (
+            <View key={item.id} style={styles.playlistCard}>
+              <Image source={{ uri: item.image }} style={styles.playlistImage} />
+              <Text style={[styles.playlistTitle, { color: theme === "light" ? "#000" : "#fff" }]}>
+                {item.title}
               </Text>
             </View>
-            <TouchableOpacity>
-              <Icon name="ellipsis-vertical" size={18} color="#B3B3B3" />
-            </TouchableOpacity>
-          </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Recommendations */}
+        <Text style={[styles.sectionTitle, { color: theme === "light" ? "#000" : "#fff" }]}>
+          Recommended
+        </Text>
+        {recommendations.map((song) => (
+          <View key={song.id} style={styles.songRow}>
+            <Image source={{ uri: song.cover }} style={styles.songCover} />
+            <View style={styles.songInfo}>
+              <Text style={{ color: theme === "light" ? "#000" : "#fff" }}>{song.title}</Text>
+              <Text style={{ color: theme === "light" ? "#555" : "#aaa" }}>{song.artist}</Text>
+            </View>
+          </View>
         ))}
       </ScrollView>
     </SafeAreaView>

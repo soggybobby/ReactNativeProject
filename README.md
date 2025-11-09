@@ -21,4 +21,8 @@ Screenshots:
 # Settings Screen
 <img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/99d17b9b-f636-4533-b58a-da5b44dffca1" />
 
+# Light Mode Feature
+<img width="1911" height="1026" alt="image" src="https://github.com/user-attachments/assets/5ef23061-da79-4af1-b437-103a51cbd555" />
+
+
 

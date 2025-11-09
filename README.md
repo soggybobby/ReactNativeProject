@@ -24,5 +24,7 @@ Screenshots:
 # Light Mode Feature
 <img width="1911" height="1026" alt="image" src="https://github.com/user-attachments/assets/5ef23061-da79-4af1-b437-103a51cbd555" />
 
+# Dark Mode Feature
+<img width="1914" height="1079" alt="image" src="https://github.com/user-attachments/assets/d3cc635d-c9bb-4c62-a1f5-233c164c438e" />
 
 

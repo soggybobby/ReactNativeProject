@@ -27,4 +27,7 @@ Screenshots:
 # Dark Mode Feature
 <img width="1914" height="1079" alt="image" src="https://github.com/user-attachments/assets/d3cc635d-c9bb-4c62-a1f5-233c164c438e" />
 
+# Geolocation Feature
+<img width="1919" height="1079" alt="Screenshot 2025-11-21 104836" src="https://github.com/user-attachments/assets/3c6648c3-e7dc-4d44-9148-739b3e8d1f58" />
+
 

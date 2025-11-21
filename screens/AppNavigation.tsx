@@ -27,6 +27,7 @@ import ProfileScreen from "./ProfileScreen";
 import SettingsScreen from "./SettingsScreen";
 import LoginScreen from "./LoginScreen";
 import SignUpScreen from "./SignUpScreen";
+import MapScreen from "./MapScreen";
 
 /* ---------------- Keys for persistence ---------------- */
 const LAST_SCREEN_KEY = "nav:lastScreen";     // "PlaylistsStack" | "Profile" | "Settings"
@@ -48,6 +49,15 @@ const FADE_200 = {
     cardStyle: { opacity: current.progress },
   }),
 };
+
+function MapWithScale() {
+  return (
+    <DrawerAnimatedContainer>
+      <DrawerStatusSaver />
+      <MapScreen />
+    </DrawerAnimatedContainer>
+  );
+}
 
 /* ---------- Reanimated drawer scale wrapper ---------- */
 function DrawerAnimatedContainer({ children }: { children: React.ReactNode }) {
@@ -266,6 +276,29 @@ function MainDrawer({ initialRouteName }: { initialRouteName: string }) {
           ),
         })}
       />
+
+      <Drawer.Screen
+  name="Map"
+  component={MapWithScale}
+  options={({ navigation }) => ({
+    headerShown: true,
+    title: "Map",
+    headerStyle: { backgroundColor: "#121212" },
+    headerTintColor: "#fff",
+    headerLeft: () => (
+      <TouchableOpacity
+        onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+        style={{ marginLeft: 12 }}
+      >
+        <Icon name="menu-outline" color="#fff" size={28} />
+      </TouchableOpacity>
+    ),
+    drawerIcon: ({ color, size }) => (
+      <Icon name="map-outline" color={color} size={size} />
+    ),
+  })}
+/>
+
 
       <Drawer.Screen
         name="Settings"
